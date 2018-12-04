@@ -10,3 +10,9 @@ Look at commit 49ddb378a998be14a528a807700cae51b65c16fc for the unfixed submissi
 ## Exercise 2
 
 Submission ready, report via email.
+
+## Exercise 3
+
+Submission ready, report via email.
+
+[Find more info about the code in the folder for the exercise](exercise3)
