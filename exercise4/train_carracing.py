@@ -106,7 +106,7 @@ def train_online(env, agent, num_episodes, history_length=0, model_dir="./models
 
         # Hint: you can keep the episodes short in the beginning by changing max_timesteps (otherwise the car will spend most of the time out of the track)
 
-        stats = run_episode(env, agent, max_timesteps=i+100, deterministic=False, do_training=True, rendering=True, skip_frames=2)
+        stats = run_episode(env, agent, max_timesteps=i+100, deterministic=False, do_training=True, rendering=False, skip_frames=2)
 
         tensorboard.write_episode_data(i, eval_dict={ "episode_reward" : stats.episode_reward,
                                                       "straight" : stats.get_action_usage(STRAIGHT),
