@@ -40,7 +40,7 @@ def run_episode(env, agent, deterministic, do_training=True, rendering=False, ma
 
     return stats
 
-def train_online(env, agent, num_episodes, model_dir="./models_cartpole", tensorboard_dir="./tensorboard"):
+def train_online(env, agent, num_episodes, model_dir="./models_mountain", tensorboard_dir="./tensorboard"):
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
 
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     # https://github.com/openai/gym/wiki/CartPole-v0
     # Hint: CartPole is considered solved when the average reward is greater than or equal to 195.0 over 100 consecutive trials.
 
-    env = gym.make("CartPole-v0").unwrapped
+    env = gym.make("MountainCar-v0").unwrapped
 
     # TODO:
     # 1. init Q network and target network (see dqn/networks.py)
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     q_target = TargetNetwork(env.observation_space.shape[0],env.action_space.n)
 
     # 2. init DQNAgent (see dqn/dqn_agent.py)
-    agent = DQNAgent(q, q_target, 2)
+    agent = DQNAgent(q, q_target, env.action_space.n)
 
 
     # 3. train DQN agent with train_online(...)
