@@ -10,7 +10,7 @@ from dqn.conv_networks import CNN, CNNTargetNetwork
 from tensorboard_evaluation import *
 import itertools as it
 from utils import *
-
+from model2 import Model2
 
 def id_to_action(action_id):
     # determine final action
@@ -27,7 +27,9 @@ def id_to_action(action_id):
 
     return a
 
-def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, rendering=False, max_timesteps=1000, history_length=0):
+
+
+def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, rendering=False, max_timesteps=1000, history_length=0, expert_agent=None):
     """
     This methods runs one episode for a gym environment.
     deterministic == True => agent executes only greedy actions according the Q function approximator (no random actions).
@@ -57,8 +59,15 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
         # action_id = agent.act(...)
         # action = your_id_to_action_method(...)
 
-        action_id = agent.act(state=state, deterministic=deterministic)
+
+        if expert_agent:
+            res = expert_agent.sess.run([expert_agent.softmax], feed_dict = { expert_agent.x: state.reshape((1, 96, 96, 1)) })[0][0]
+            action_id = np.argmax(res)
+        else:
+            action_id = agent.act(state=state, deterministic=deterministic)
+
         action = id_to_action(action_id)
+
         next_state, reward, terminal, info = env.step(action)
 
         # Hint: frame skipping might help you to get better results.
@@ -93,7 +102,7 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
     return stats
 
 
-def train_online(env, agent, num_episodes, history_length=0, model_dir="./models_carracing", tensorboard_dir="./tensorboard"):
+def train_online(env, agent, num_episodes, history_length=0, model_dir="./models_carracing", tensorboard_dir="./tensorboard", expert_agent=None):
 
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
@@ -105,8 +114,10 @@ def train_online(env, agent, num_episodes, history_length=0, model_dir="./models
         print("epsiode %d" % i)
 
         # Hint: you can keep the episodes short in the beginning by changing max_timesteps (otherwise the car will spend most of the time out of the track)
+        if i > 20:
+            expert_agent = None
 
-        stats = run_episode(env, agent, max_timesteps=i+100, deterministic=False, do_training=True, rendering=False, skip_frames=2)
+        stats = run_episode(env, agent, max_timesteps=1000, deterministic=False, do_training=True, rendering=True, skip_frames=0, expert_agent=expert_agent)
 
         tensorboard.write_episode_data(i, eval_dict={ "episode_reward" : stats.episode_reward,
                                                       "straight" : stats.get_action_usage(STRAIGHT),
@@ -126,7 +137,7 @@ def train_online(env, agent, num_episodes, history_length=0, model_dir="./models
     tensorboard.close_session()
 
 def state_preprocessing(state):
-    return rgb2gray(state).reshape(96, 96) / 255.0
+    return rgb2gray(state).reshape(96, 96) #/ 255.0
 
 if __name__ == "__main__":
 
@@ -139,5 +150,10 @@ if __name__ == "__main__":
     # 2. init DQNAgent (see dqn/dqn_agent.py)
     agent = DQNAgent(q, q_target, 5)
 
-    train_online(env, agent, num_episodes=10000, history_length=0, model_dir="./models_carracing")
+    # expert agent from ex 3
+    expert_agent = Model2(name='model2', dropout=1.0)
+    expert_agent.load("./models_carracing/model2_30000.ckpt")
+
+
+    train_online(env, agent, num_episodes=10000, history_length=0, model_dir="./models_carracing", expert_agent=expert_agent)
 
