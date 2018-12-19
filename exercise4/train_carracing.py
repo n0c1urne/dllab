@@ -1,9 +1,8 @@
-# export DISPLAY=:0
-
 import sys
 sys.path.append("../")
 
 import numpy as np
+import matplotlib.pyplot as plt
 import gym
 from dqn.dqn_agent_car_racing import DQNAgent
 from dqn.conv_networks import CNN, CNNTargetNetwork
@@ -27,6 +26,19 @@ def id_to_action(action_id):
 
     return a
 
+def lane_penalty(state):
+    eps = 2.0
+
+    ## check for green values (174.??? or 192.???)
+    offlane_left = abs(state[68, 44] - 174.0) < eps or abs(state[68, 44] - 192.0) < eps
+    offlane_right = abs(state[68, 51] - 174.0) < eps or abs(state[68, 51] - 192.0) < eps
+
+    if offlane_left and offlane_right:
+        return -4.0  # bad buggy: completely of track, high penalty
+    elif offlane_left or offlane_right:
+        return -1.0  # one side off track
+    else:
+        return 0.0
 
 
 def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, rendering=False, max_timesteps=1000, history_length=0, expert_agent=None):
@@ -68,13 +80,17 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
 
         action = id_to_action(action_id)
 
-        next_state, reward, terminal, info = env.step(action)
-
         # Hint: frame skipping might help you to get better results.
         reward = 0
         for _ in range(skip_frames + 1):
             next_state, r, terminal, info = env.step(action)
             reward += r
+
+            # now we need the processing on every frame
+            next_state = state_preprocessing(next_state)
+
+            if step > 50:                          # only after zooming, apply lane penalty
+                reward += lane_penalty(next_state) # add lane penalty to reward
 
             if rendering:
                 env.render()
@@ -82,7 +98,14 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
             if terminal:
                  break
 
-        next_state = state_preprocessing(next_state)
+        if step > 50 and False: # remove false for debugging
+            plt.figure()
+            img = next_state.copy()
+            img[68, 43] = 255
+            img[68, 52] = 255
+            plt.imshow(img.reshape((96, 96)), cmap='gray')
+            plt.show()
+
         image_hist.append(next_state)
         image_hist.pop(0)
         next_state = np.array(image_hist).reshape(96, 96, history_length + 1)
@@ -111,13 +134,13 @@ def train_online(env, agent, num_episodes, history_length=0, model_dir="./models
     tensorboard = Evaluation(os.path.join(tensorboard_dir, "train"), ["episode_reward", "straight", "left", "right", "accel", "brake"])
 
     for i in range(num_episodes):
-        print("epsiode %d" % i)
+        print("episode %d" % i)
 
         # Hint: you can keep the episodes short in the beginning by changing max_timesteps (otherwise the car will spend most of the time out of the track)
-        if i > 20:
+        if i > 100:
             expert_agent = None
 
-        stats = run_episode(env, agent, max_timesteps=1000, deterministic=False, do_training=True, rendering=True, skip_frames=0, expert_agent=expert_agent)
+        stats = run_episode(env, agent, max_timesteps=1000, deterministic=False, do_training=True, rendering=False, skip_frames=0, expert_agent=expert_agent)
 
         tensorboard.write_episode_data(i, eval_dict={ "episode_reward" : stats.episode_reward,
                                                       "straight" : stats.get_action_usage(STRAIGHT),

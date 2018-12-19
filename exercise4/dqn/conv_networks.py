@@ -20,6 +20,7 @@ class CNN():
         self.states_ = tf.placeholder(tf.float32, shape=[None, 96, 96, history_len])
         self.actions_ = tf.placeholder(tf.int32, shape=[None])                  # Integer id of which action was selected
         self.targets_ = tf.placeholder(tf.float32,  shape=[None])               # The TD target value
+        self.training_ = tf.placeholder_with_default(False, shape=())
 
         fc1_size = 512
         fc2_size = 128
@@ -61,7 +62,11 @@ class CNN():
 
         # network
         fc1 = tf.layers.dense(flat, fc1_size, tf.nn.relu)
+        fc1 = tf.layers.dropout(fc1, rate=0.25, training=self.training_)
+
         fc2 = tf.layers.dense(fc1, fc2_size, tf.nn.relu)
+        fc2 = tf.layers.dropout(fc2, rate=0.25, training=self.training_)
+
         self.predictions = tf.layers.dense(fc2, num_actions)
 
         # Get the predictions for the chosen actions only
@@ -100,7 +105,7 @@ class CNN():
           actions: [current_action] or actions of batch
           targets: [current_target] or targets of batch
         """
-        feed_dict = { self.states_: states, self.targets_: targets, self.actions_: actions}
+        feed_dict = { self.states_: states, self.targets_: targets, self.actions_: actions, self.training_: True}
         _, loss = sess.run([self.train_op, self.loss], feed_dict)
         return loss
 
