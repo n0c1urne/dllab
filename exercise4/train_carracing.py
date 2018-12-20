@@ -89,7 +89,7 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
             # now we need the processing on every frame
             next_state = state_preprocessing(next_state)
 
-            if step > 50 and apply_lane_penalty:   # only after zooming, apply lane penalty
+            if step > (50/skip_frames) and apply_lane_penalty:   # only after zooming, apply lane penalty
                 reward += lane_penalty(next_state) # add lane penalty to reward
 
             if rendering:
