@@ -34,9 +34,9 @@ def lane_penalty(state):
     offlane_right = abs(state[68, 51] - 174.0) < eps or abs(state[68, 51] - 192.0) < eps
 
     if offlane_left and offlane_right:
-        return -4.0  # bad buggy: completely of track, high penalty
+        return -2.0  # bad buggy: completely of track, high penalty
     elif offlane_left or offlane_right:
-        return -1.0  # one side off track
+        return -0.5  # one side off track
     else:
         return 0.0
 
@@ -137,12 +137,12 @@ def train_online(env, agent, num_episodes, history_length=0, model_dir="./models
         print("episode %d" % i)
 
         # Hint: you can keep the episodes short in the beginning by changing max_timesteps (otherwise the car will spend most of the time out of the track)
-        apply_lane_penalty = False
-        if i > 50:
-            expert_agent = None
-            apply_lane_penalty = True
+        #apply_lane_penalty = False
+        #if i > 50:
+        #    expert_agent = None
+        #    apply_lane_penalty = True
 
-        stats = run_episode(env, agent, max_timesteps=1000, deterministic=False, do_training=True, rendering=True, skip_frames=0, expert_agent=expert_agent, apply_lane_penalty=apply_lane_penalty)
+        stats = run_episode(env, agent, max_timesteps=min(num_episode*2 + 100, 1000), deterministic=False, do_training=True, rendering=True, skip_frames=0, expert_agent=expert_agent, apply_lane_penalty=True)
 
         tensorboard.write_episode_data(i, eval_dict={ "episode_reward" : stats.episode_reward,
                                                       "straight" : stats.get_action_usage(STRAIGHT),
@@ -176,9 +176,9 @@ if __name__ == "__main__":
     agent = DQNAgent(q, q_target, 5)
 
     # expert agent from ex 3
-    expert_agent = Model2(name='model2', dropout=1.0)
-    expert_agent.load("./models_carracing/model2_30000.ckpt")
+    #expert_agent = Model2(name='model2', dropout=1.0)
+    #expert_agent.load("./models_carracing/model2_30000.ckpt")
 
 
-    train_online(env, agent, num_episodes=10000, history_length=0, model_dir="./models_carracing", expert_agent=expert_agent)
+    train_online(env, agent, num_episodes=10000, history_length=0, model_dir="./models_carracing")
 
