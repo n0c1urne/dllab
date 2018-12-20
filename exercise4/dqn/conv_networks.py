@@ -62,10 +62,10 @@ class CNN():
 
         # network
         fc1 = tf.layers.dense(flat, fc1_size, tf.nn.relu)
-        fc1 = tf.layers.dropout(fc1, rate=0.25, training=self.training_)
+        #fc1 = tf.layers.dropout(fc1, rate=0.25, training=self.training_)
 
         fc2 = tf.layers.dense(fc1, fc2_size, tf.nn.relu)
-        fc2 = tf.layers.dropout(fc2, rate=0.25, training=self.training_)
+        #fc2 = tf.layers.dropout(fc2, rate=0.25, training=self.training_)
 
         self.predictions = tf.layers.dense(fc2, num_actions)
 
