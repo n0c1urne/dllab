@@ -41,7 +41,7 @@ def lane_penalty(state):
         return 0.0
 
 
-def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, rendering=False, max_timesteps=1000, history_length=0, expert_agent=None, lane_penalty=False):
+def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, rendering=False, max_timesteps=1000, history_length=0, expert_agent=None, apply_lane_penalty=False):
     """
     This methods runs one episode for a gym environment.
     deterministic == True => agent executes only greedy actions according the Q function approximator (no random actions).
@@ -89,7 +89,7 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
             # now we need the processing on every frame
             next_state = state_preprocessing(next_state)
 
-            if step > 50 and lane_penalty:                          # only after zooming, apply lane penalty
+            if step > 50 and apply_lane_penalty:   # only after zooming, apply lane penalty
                 reward += lane_penalty(next_state) # add lane penalty to reward
 
             if rendering:
@@ -137,12 +137,12 @@ def train_online(env, agent, num_episodes, history_length=0, model_dir="./models
         print("episode %d" % i)
 
         # Hint: you can keep the episodes short in the beginning by changing max_timesteps (otherwise the car will spend most of the time out of the track)
-        lane_penalty = False
+        apply_lane_penalty = False
         if i > 50:
             expert_agent = None
-            lane_penalty = True
+            apply_lane_penalty = True
 
-        stats = run_episode(env, agent, max_timesteps=1000, deterministic=False, do_training=True, rendering=True, skip_frames=0, expert_agent=expert_agent, lane_penalty=lane_penalty)
+        stats = run_episode(env, agent, max_timesteps=1000, deterministic=False, do_training=True, rendering=True, skip_frames=0, expert_agent=expert_agent, apply_lane_penalty=apply_lane_penalty)
 
         tensorboard.write_episode_data(i, eval_dict={ "episode_reward" : stats.episode_reward,
                                                       "straight" : stats.get_action_usage(STRAIGHT),
