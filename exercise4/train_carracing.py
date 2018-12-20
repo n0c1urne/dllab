@@ -98,7 +98,7 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
             if terminal:
                  break
 
-        print(step, reward)
+        #print(step, reward)
 
         if step > 50 and False: # remove false for debugging
             plt.figure()
