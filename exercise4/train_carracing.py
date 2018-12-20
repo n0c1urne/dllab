@@ -144,7 +144,7 @@ def train_online(env, agent, num_episodes, history_length=0, model_dir="./models
         #    expert_agent = None
         #    apply_lane_penalty = True
 
-        stats = run_episode(env, agent, max_timesteps=min(i*2 + 100, 1000), deterministic=False, do_training=True, rendering=True, skip_frames=0, expert_agent=expert_agent, apply_lane_penalty=True)
+        stats = run_episode(env, agent, max_timesteps=min(i*2 + 100, 1000), deterministic=False, do_training=True, rendering=True, skip_frames=2, expert_agent=expert_agent, apply_lane_penalty=True)
 
         tensorboard.write_episode_data(i, eval_dict={ "episode_reward" : stats.episode_reward,
                                                       "straight" : stats.get_action_usage(STRAIGHT),
