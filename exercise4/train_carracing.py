@@ -11,6 +11,10 @@ import itertools as it
 from utils import *
 from model2 import Model2
 
+
+def state_preprocessing(state):
+    return rgb2gray(state).reshape(96, 96) / 255.0
+
 def id_to_action(action_id):
     # determine final action
     a = [0,0,0]
@@ -26,17 +30,30 @@ def id_to_action(action_id):
 
     return a
 
+def is_close(a,colors,eps=0.02):
+    for color in colors:
+        if abs(a-color) < eps:
+            return True
+
+    return False
+
 def lane_penalty(state):
-    eps = 2.0
+    green_colors = [0.68, 0.75]
 
     ## check for green values (174.??? or 192.???)
-    offlane_left = abs(state[68, 44] - 174.0) < eps or abs(state[68, 44] - 192.0) < eps
-    offlane_right = abs(state[68, 51] - 174.0) < eps or abs(state[68, 51] - 192.0) < eps
+    left_sensor = state[68, 44]
+    right_sensor = state[68, 51]
+
+    offlane_left = is_close(left_sensor, green_colors)
+    offlane_right = is_close(right_sensor, green_colors)
+
+    #if offlane_left: print("off left!")
+    #if offlane_right: print("off right!")
 
     if offlane_left and offlane_right:
-        return -2.0  # bad buggy: completely of track, high penalty
+        return -1.0  # bad buggy: completely of track, high penalty
     elif offlane_left or offlane_right:
-        return -0.5  # one side off track
+        return -0.25  # one side off track
     else:
         return 0.0
 
@@ -72,12 +89,7 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
         # action = your_id_to_action_method(...)
 
 
-        if expert_agent:
-            res = expert_agent.sess.run([expert_agent.softmax], feed_dict = { expert_agent.x: state.reshape((1, 96, 96, 1)) })[0][0]
-            action_id = np.argmax(res)
-        else:
-            action_id = agent.act(state=state, deterministic=deterministic)
-
+        action_id = agent.act(state=state, deterministic=deterministic)
         action = id_to_action(action_id)
 
         # Hint: frame skipping might help you to get better results.
@@ -89,7 +101,11 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
             # now we need the processing on every frame
             next_state = state_preprocessing(next_state)
 
-            if step > (50/skip_frames) and apply_lane_penalty:   # only after zooming, apply lane penalty
+            #if step > 50/skip_frames:
+            #    print(lane_penalty(next_state))
+
+            # only after zooming (after 50 steps), apply lane penalty
+            if step > (50/skip_frames) and apply_lane_penalty:
                 reward += lane_penalty(next_state) # add lane penalty to reward
 
             if rendering:
@@ -98,15 +114,14 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
             if terminal:
                  break
 
-        #print(step, reward)
-
-        if step > 50 and False: # remove false for debugging
-            plt.figure()
-            img = next_state.copy()
-            img[68, 43] = 255
-            img[68, 52] = 255
-            plt.imshow(img.reshape((96, 96)), cmap='gray')
-            plt.show()
+        # visualize what the agent sees
+        #if step > 50 and False: # remove false for debugging
+        #    plt.figure()
+        #    img = next_state.copy()
+        #    img[68, 43] = 255
+        #    img[68, 52] = 255
+        #    plt.imshow(img.reshape((96, 96)), cmap='gray')
+        #    plt.show()
 
         image_hist.append(next_state)
         image_hist.pop(0)
@@ -143,8 +158,8 @@ def train_online(env, agent, num_episodes, history_length=0, model_dir="./models
         #if i > 50:
         #    expert_agent = None
         #    apply_lane_penalty = True
-
-        stats = run_episode(env, agent, max_timesteps=min(i*2 + 100, 1000), deterministic=False, do_training=True, rendering=False, skip_frames=2, expert_agent=expert_agent, apply_lane_penalty=False)
+        max_timesteps = min(i*2 + 100, 1000)
+        stats = run_episode(env, agent, max_timesteps=max_timesteps, deterministic=False, do_training=True, rendering=False, skip_frames=2, expert_agent=expert_agent, apply_lane_penalty=True)
 
         tensorboard.write_episode_data(i, eval_dict={ "episode_reward" : stats.episode_reward,
                                                       "straight" : stats.get_action_usage(STRAIGHT),
@@ -163,8 +178,6 @@ def train_online(env, agent, num_episodes, history_length=0, model_dir="./models
 
     tensorboard.close_session()
 
-def state_preprocessing(state):
-    return rgb2gray(state).reshape(96, 96) #/ 255.0
 
 if __name__ == "__main__":
 
