@@ -51,9 +51,9 @@ def lane_penalty(state):
     #if offlane_right: print("off right!")
 
     if offlane_left and offlane_right:
-        return -1.0  # bad buggy: completely of track, high penalty
+        return -4.0  # bad buggy: completely of track, high penalty
     elif offlane_left or offlane_right:
-        return -0.25  # one side off track
+        return -1.0  # one side off track
     else:
         return 0.0
 
@@ -159,7 +159,7 @@ def train_online(env, agent, num_episodes, history_length=0, model_dir="./models
         #    expert_agent = None
         #    apply_lane_penalty = True
         max_timesteps = min(i*2 + 100, 1000)
-        stats = run_episode(env, agent, max_timesteps=max_timesteps, deterministic=False, do_training=True, rendering=False, skip_frames=2, expert_agent=expert_agent, apply_lane_penalty=True)
+        stats = run_episode(env, agent, max_timesteps=max_timesteps, deterministic=False, do_training=True, rendering=False, skip_frames=1, expert_agent=expert_agent, apply_lane_penalty=True)
 
         tensorboard.write_episode_data(i, eval_dict={ "episode_reward" : stats.episode_reward,
                                                       "straight" : stats.get_action_usage(STRAIGHT),
