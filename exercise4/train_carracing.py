@@ -105,7 +105,7 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
             #    print(lane_penalty(next_state))
 
             # only after zooming (after 50 steps), apply lane penalty
-            if step > (50/skip_frames) and apply_lane_penalty:
+            if step > 50/(skip_frames+1) and apply_lane_penalty:
                 reward += lane_penalty(next_state) # add lane penalty to reward
 
             if rendering:
