@@ -34,19 +34,19 @@ class CNN():
         #filter counts
         nf1, nf2, nf3 = (16, 32, 48)
 
-        conv1 = tf.contrib.layers.conv2d(self.states_[:,:,:,0:1], 32, 7, activation=tf.nn.relu)
+        conv1 = tf.contrib.layers.conv2d(self.states_[:,:,:,0:1], 32, 7, activation_fn=tf.nn.relu)
         pool1 = tf.contrib.layers.max_pooling2d(conv1, 2, 2)
-        conv2 = tf.contrib.layers.conv2d(pool1, 48, 5, activation=tf.nn.relu)
+        conv2 = tf.contrib.layers.conv2d(pool1, 48, 5, activation_fn=tf.nn.relu)
         pool2 = tf.contrib.layers.max_pooling2d(conv2, 2, 2)
-        conv3 = tf.contrib.layers.conv2d(pool2, 64, 3, activation=tf.nn.relu)
+        conv3 = tf.contrib.layers.conv2d(pool2, 64, 3, activation_fn=tf.nn.relu)
         pool3 = tf.contrib.layers.max_pooling2d(conv3, 2, 2)
         flat1 = tf.contrib.layers.flatten(pool3)
 
-        conv1_diff = tf.contrib.layers.conv2d(self.states_[:,:,:,1:2], 32, 7, activation=tf.nn.relu)
+        conv1_diff = tf.contrib.layers.conv2d(self.states_[:,:,:,1:2], 32, 7, activation_fn=tf.nn.relu)
         pool1_diff = tf.contrib.layers.max_pooling2d(conv1_diff, 2, 2)
-        conv2_diff = tf.contrib.layers.conv2d(pool1_diff, 48, 5, activation=tf.nn.relu)
+        conv2_diff = tf.contrib.layers.conv2d(pool1_diff, 48, 5, activation_fn=tf.nn.relu)
         pool2_diff = tf.contrib.layers.max_pooling2d(conv2_diff, 2, 2)
-        conv3_diff = tf.contrib.layers.conv2d(pool2_diff, 64, 3, activation=tf.nn.relu)
+        conv3_diff = tf.contrib.layers.conv2d(pool2_diff, 64, 3, activation_fn=tf.nn.relu)
         pool3_diff = tf.contrib.layers.max_pooling2d(conv3_diff, 2, 2)
         flat2 = tf.contrib.layers.flatten(pool3_diff)
 
