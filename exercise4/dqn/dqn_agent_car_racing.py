@@ -72,7 +72,7 @@ class DQNAgent:
         action_id = 0
         if deterministic or r > self.epsilon:
             # take greedy action (argmax)
-            res = self.Q_target.predict(self.sess, state.reshape((1, 96, 96, 1)))
+            res = self.Q_target.predict(self.sess, state.reshape((1, 96, 96, 2)))
             action_id = np.argmax(res)
         else:
             # sample random action - make accel and steering more probable

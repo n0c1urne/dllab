@@ -51,14 +51,17 @@ def lane_penalty(state):
     #if offlane_right: print("off right!")
 
     if offlane_left and offlane_right:
-        return -4.0  # bad buggy: completely of track, high penalty
+        return -1.00  # bad buggy: completely of track, high penalty
     elif offlane_left or offlane_right:
-        return -1.0  # one side off track
+        return -0.25  # one side off track
     else:
         return 0.0
 
 
-def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, rendering=False, max_timesteps=1000, history_length=0, expert_agent=None, apply_lane_penalty=False):
+def combine(state, difference):
+    return np.dstack([state, difference])
+
+def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, rendering=False, max_timesteps=1000, expert_agent=None, apply_lane_penalty=False):
     """
     This methods runs one episode for a gym environment.
     deterministic == True => agent executes only greedy actions according the Q function approximator (no random actions).
@@ -66,9 +69,6 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
     """
 
     stats = EpisodeStats()
-
-    # Save history
-    image_hist = []
 
     step = 0
     state = env.reset()
@@ -78,8 +78,9 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
 
     # append image history to first state
     state = state_preprocessing(state)
-    image_hist.extend([state] * (history_length + 1))
-    state = np.array(image_hist).reshape(96, 96, history_length + 1)
+    #state = np.array(image_hist).reshape(96, 96)
+
+    difference = np.zeros((96, 96))
 
     while True:
 
@@ -88,8 +89,7 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
         # action_id = agent.act(...)
         # action = your_id_to_action_method(...)
 
-
-        action_id = agent.act(state=state, deterministic=deterministic)
+        action_id = agent.act(state=combine(state, difference), deterministic=deterministic)
         action = id_to_action(action_id)
 
         # Hint: frame skipping might help you to get better results.
@@ -101,9 +101,6 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
             # now we need the processing on every frame
             next_state = state_preprocessing(next_state)
 
-            #if step > 50/skip_frames:
-            #    print(lane_penalty(next_state))
-
             # only after zooming (after 50 steps), apply lane penalty
             if step > 50/(skip_frames+1) and apply_lane_penalty:
                 reward += lane_penalty(next_state) # add lane penalty to reward
@@ -114,25 +111,16 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
             if terminal:
                  break
 
-        # visualize what the agent sees
-        #if step > 50 and False: # remove false for debugging
-        #    plt.figure()
-        #    img = next_state.copy()
-        #    img[68, 43] = 255
-        #    img[68, 52] = 255
-        #    plt.imshow(img.reshape((96, 96)), cmap='gray')
-        #    plt.show()
-
-        image_hist.append(next_state)
-        image_hist.pop(0)
-        next_state = np.array(image_hist).reshape(96, 96, history_length + 1)
+        next_state = np.array(next_state).reshape(96, 96)
+        next_difference = (state - next_state).reshape((96, 96))
 
         if do_training:
-            agent.train(state, action_id, next_state, reward, terminal)
+            agent.train(combine(state, difference), action_id, combine(next_state, next_difference), reward, terminal)
 
         stats.step(reward, action_id)
 
         state = next_state
+        difference = next_difference
 
         if terminal or (step * (skip_frames + 1)) > max_timesteps:
             break
@@ -159,7 +147,7 @@ def train_online(env, agent, num_episodes, history_length=0, model_dir="./models
         #    expert_agent = None
         #    apply_lane_penalty = True
         max_timesteps = min(i*2 + 100, 1000)
-        stats = run_episode(env, agent, max_timesteps=max_timesteps, deterministic=False, do_training=True, rendering=False, skip_frames=1, expert_agent=expert_agent, apply_lane_penalty=True)
+        stats = run_episode(env, agent, max_timesteps=max_timesteps, deterministic=False, do_training=True, rendering=False, skip_frames=2, expert_agent=expert_agent, apply_lane_penalty=True)
 
         tensorboard.write_episode_data(i, eval_dict={ "episode_reward" : stats.episode_reward,
                                                       "straight" : stats.get_action_usage(STRAIGHT),
