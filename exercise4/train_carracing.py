@@ -78,6 +78,7 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
 
     # append image history to first state
     state = state_preprocessing(state)
+    next_state = state
     #state = np.array(image_hist).reshape(96, 96)
 
     difference = np.zeros((96, 96))
@@ -95,6 +96,7 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
         # Hint: frame skipping might help you to get better results.
         reward = 0
         for _ in range(skip_frames + 1):
+            old_state = next_state
             next_state, r, terminal, info = env.step(action)
             reward += r
 
@@ -112,7 +114,7 @@ def run_episode(env, agent, deterministic, skip_frames=0,  do_training=True, ren
                  break
 
         next_state = np.array(next_state).reshape(96, 96)
-        next_difference = (state - next_state).reshape((96, 96))
+        next_difference = (state - old_state).reshape((96, 96))
 
         if do_training:
             agent.train(combine(state, difference), action_id, combine(next_state, next_difference), reward, terminal)
@@ -146,7 +148,7 @@ def train_online(env, agent, num_episodes, history_length=0, model_dir="./models
         #if i > 50:
         #    expert_agent = None
         #    apply_lane_penalty = True
-        max_timesteps = min(i*2 + 100, 1000)
+        max_timesteps = min(i*4 + 100, 1000)
         stats = run_episode(env, agent, max_timesteps=max_timesteps, deterministic=False, do_training=True, rendering=False, skip_frames=2, expert_agent=expert_agent, apply_lane_penalty=True)
 
         tensorboard.write_episode_data(i, eval_dict={ "episode_reward" : stats.episode_reward,
